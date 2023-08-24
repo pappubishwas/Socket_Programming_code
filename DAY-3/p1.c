@@ -1,84 +1,64 @@
 #include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+int main() {
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len;
 
-#define PORT 8888
-#define MAX_MESSAGE_LEN 100
-int main()
-{
-    int sockfd;
-    struct sockaddr_in serverAddr, cilentAddr;
+    char buffer[1024];
 
-    socklen_t cilentAddrLen = sizeof(cilentAddr);
-    char buffer[MAX_MESSAGE_LEN] = {0};
-
-    // Create a UDP coket
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-
-    if (sockfd == -1)
-    {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
-    // Set up the server address
-
-    memset(&serverAddr,0,sizeof(serverAddr));
-    serverAddr.sin_family=AF_INET;
-    serverAddr.sin_addr.s_addr=INADDR_ANY;
-    serverAddr.sin_port=htons(PORT);
-
-
-    //Bind the socket to the server address
-
-    if(bind(sockfd,(struct sockaddr*)&serverAddr,sizeof(serverAddr))==-1){
-        perror("Bind");
-        close(sockfd);
+    // Create socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
 
-    printf("Server is listening on port %d....\n", PORT);
-
-    while (1)
-    {
-        //Receive message from the client
-        ssize_t numBytes=recvfrom(sockfd,buffer,MAX_MESSAGE_LEN-1,0,(struct sockaddr*)&cilentAddr,&cilentAddrLen);
-        if(numBytes==-1){
-            perror("recvfrom");
-            close(sockfd);
-            exit(EXIT_FAILURE);
-        }
-        buffer[numBytes]='\0';
-
-        printf("Received message from cilent :%s\n",buffer);
-
-        // Reply to the client with "Hello"
-
-        const char *replyMessage="Hello";
-        if(sendto(sockfd,replyMessage,strlen(replyMessage),0,(struct sockaddr*)&cilentAddr,cilentAddrLen)==-1){
-            perror("sendto");
-            close(sockfd);
-            exit(EXIT_FAILURE);
-        }
+    // Bind
+    if (bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
     }
-    
-    close(sockfd);
+
+    // Listen
+    if (listen(server_socket, 5) == -1) {
+        perror("Listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port 8080...\n");
+
+    // Accept connection
+    client_len = sizeof(client_addr);
+    client_socket = accept(server_socket, (struct sockaddr*)&client_addr, &client_len);
+    if (client_socket == -1) {
+        perror("Accept failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Connection accepted from %s:%d\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+    // Receive and send data
+    while (1) {
+        memset(buffer, 0, sizeof(buffer));
+        recv(client_socket, buffer, sizeof(buffer), 0);
+
+        printf("Received from client: %s", buffer);
+
+        send(client_socket, buffer, strlen("I got your message."), 0);
+    }
+
+    // Close sockets
+    close(client_socket);
+    close(server_socket);
 
     return 0;
-
-    //     struct sockaddr_in server_addr;
-    // server_addr.sin_family = AF_UNIX;
-
-    // server_addr.sin_port = htons(2000);
-
-    // server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    // bind(socket_desc, (struct sockaddr *)&server_addr, sizeof(server_addr));
-
-    // listen(socket_desc, 5);
 }

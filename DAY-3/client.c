@@ -3,11 +3,7 @@
 #include <string.h> // Include the string library for string manipulation functions
 #include <arpa/inet.h> // Include the library for using the internet address manipulation functions
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
 #include <unistd.h>
-
-
 #define SERVER_IP "127.0.0.1" // Define the server IP address
 #define PORT 4444 // Define the port number for communication
 #define MAX_MESSAGE_LEN 100 // Define the maximum length of the message
