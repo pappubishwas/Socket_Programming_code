@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
     printf("Connection established with client\n");
 
     // Exchange messages
+    
     char buffer[1024];
     while (1)
     {
